@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WMS Data Formatter</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="container-fluid">
+      <h2>WMS Data Formatter</h2>
+      <div class="form-group">
+        <label for="sourceFile">Source File (CSV)</label>
+        <input id="sourceFile" class="form-control-file" type="file" accept="text/csv">
+      </div>
+      <div class="form-group">
+        <label for="dataFile">Data File (TXT)</label>
+        <input id="dataFile" class="form-control-file" type="file" accept="text/plain">
+      </div>
+      <div class="form-group">
+        <h4>Output</h4>
+        <textarea id="output" class="form-control" rows="15"></textarea>
+      </div>
+    </div>
+    <script src="https://unpkg.com/papaparse@5.2.0/papaparse.min.js"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>
