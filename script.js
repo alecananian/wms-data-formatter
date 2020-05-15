@@ -1,3 +1,24 @@
+numeral.register('locale', 'nl-nl', {
+  delimiters: {
+    thousands: '.',
+    decimal  : ','
+  },
+  abbreviations: {
+    thousand : 'k',
+    million  : 'mln',
+    billion  : 'mrd',
+    trillion : 'bln'
+  },
+  ordinal : function (number) {
+    var remainder = number % 100;
+    return (number !== 0 && remainder <= 1 || remainder === 8 || remainder >= 20) ? 'ste' : 'de';
+  },
+  currency: {
+    symbol: '€ '
+  }
+});
+numeral.locale('nl-nl');
+
 (() => {
   const readFile = (file, callback) => {
     const reader = new FileReader();
@@ -7,10 +28,9 @@
     reader.readAsText(file);
   };
 
-  const normalizeNumberString = (number = '0') => Number(number.replace(',', ''));
-
   const padNumber = (number, suffix) => {
-    const paddedNumber = ("000000000" + Math.abs(number)).slice(-9);
+    const numberString = Math.abs(number).toFixed(2).toString().replace(/\D/g, '');
+    const paddedNumber = (`000000000${numberString}`).slice(-9);
     return `${paddedNumber}${suffix || (number > 0 ? '-' : '+')}`;
   };
 
@@ -63,15 +83,14 @@
         delimiter: ';',
         header: true,
       });
-      console.log(data[0]);
       sourceData = data.map(({
         TenantName,
         Total,
         Balance,
       }) => ({
         tenantName: TenantName,
-        total: normalizeNumberString(Total),
-        balance: normalizeNumberString(Balance),
+        total: numeral(Total).value(),
+        balance: numeral(Balance).value(),
       }));
 
       if (sourceData && outputData) {
