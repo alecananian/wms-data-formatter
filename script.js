@@ -51,26 +51,40 @@ numeral.locale('nl-nl');
       balance,
     }) => {
       if (tenantName && tenantName.length > 0) {
-        const tenantLines = outputData.filter((line) => {
+        let tenantLines = outputData.filter((line) => {
           // Line doesn't have enough data
-          if (!line || line.length < 3) {
-            return false;
-          }
-          
-          // Line doesn't include payment data
-          if (!line[2].includes('000000000+')) {
+          if (!line || line.length < 3 || !line[2].includes('000000000+')) {
             return false;
           }
 
           // Line has a match on tenant name
-          if (line[1].includes(tenantName)) {
+          if (line[1].toLowerCase().includes(tenantName.toLowerCase())) {
             return true;
           }
 
-          // Try matching agains the last part of the tenant name
-          const nameParts = tenantName.split(' ');
-          return new RegExp(`${nameParts[nameParts.length - 1]}$`).test(line[1].trim());
+          // Try matching after removing some known additions
+          const normalizedTenantName = (
+            tenantName
+              .replace(/(meneer|mevrouw+)\.?/gi, '')
+              .trim()
+              .toLowerCase()
+          );
+          return line[1].toLowerCase().includes(normalizedTenantName);
         });
+
+        if (tenantLines.length === 0) {
+          tenantLines = outputData.filter((line) => {
+            // Line doesn't have enough data
+            if (!line || line.length < 3 || !line[2].includes('000000000+')) {
+              return false;
+            }
+
+            // Try matching agains the last part of the tenant name
+            const nameParts = tenantName.split(' ').filter((part) => part && part.length > 0);
+            return new RegExp(`${nameParts[nameParts.length - 1]}$`, 'i').test(line[1].trim());
+          });
+        }
+
         if (tenantLines.length > 0) {
           if (tenantLines.length > 1) {
             warnings.push(`Multiple matches found for ${tenantName}`);
