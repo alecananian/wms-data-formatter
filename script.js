@@ -34,6 +34,13 @@ numeral.locale('nl-nl');
     return `${paddedNumber}${suffix || (number > 0 ? '-' : '+')}`;
   };
 
+  const normalizeTenantName = (tenantName) => (
+    tenantName
+      .replace(/((meneer|mevrouw+|e\.a)\.?)|k[0-9]{8}/gi, '')
+      .trim()
+      .toLowerCase()
+  );
+
   let sourceData;
   let outputData;
   let outputDataString;
@@ -43,45 +50,38 @@ numeral.locale('nl-nl');
   const outputTextarea = document.getElementById('output');
   const warningsEl = document.getElementById('warnings');
 
+  const PaymentLinePattern = '000000000+';
+
   const printOutput = () => {
     const warnings = [];
+
+    // Remove lines that don't have enough data
+    const filteredOutputData = outputData.filter((line) => (
+      line && line.some((item) => item.includes(PaymentLinePattern))
+    ));
+
     sourceData.forEach(({
       tenantName,
       total,
       balance,
     }) => {
       if (tenantName && tenantName.length > 0) {
-        let tenantLines = outputData.filter((line) => {
-          // Line doesn't have enough data
-          if (!line || line.length < 3 || !line[2].includes('000000000+')) {
-            return false;
-          }
-
-          // Line has a match on tenant name
-          if (line[1].toLowerCase().includes(tenantName.toLowerCase())) {
-            return true;
-          }
-
-          // Try matching after removing some known additions
-          const normalizedTenantName = (
-            tenantName
-              .replace(/(meneer|mevrouw+)\.?/gi, '')
-              .trim()
-              .toLowerCase()
+        let tenantLines = filteredOutputData.filter((line) => {
+          const normalizedLineName = line[1].toLowerCase();
+          return (
+            // Line has a match on tenant name
+            normalizedLineName.includes(tenantName.toLowerCase())
+            // Try matching after removing some known additions
+            || normalizedLineName.includes(normalizeTenantName(tenantName))
           );
-          return line[1].toLowerCase().includes(normalizedTenantName);
         });
 
         if (tenantLines.length === 0) {
-          tenantLines = outputData.filter((line) => {
-            // Line doesn't have enough data
-            if (!line || line.length < 3 || !line[2].includes('000000000+')) {
-              return false;
-            }
-
-            // Try matching agains the last part of the tenant name
-            const nameParts = tenantName.split(' ').filter((part) => part && part.length > 0);
-            return new RegExp(`${nameParts[nameParts.length - 1]}$`, 'i').test(line[1].trim());
+          tenantLines = filteredOutputData.filter((line) => {
+            // Use string similarity matcher with threshold
+            const normalizedTenantName = normalizeTenantName(tenantName);
+            const normalizedLineName = normalizeTenantName(line[1]);
+            return stringSimilarity.compareTwoStrings(normalizedTenantName, normalizedLineName) >= 0.575;
           });
         }
 
@@ -90,7 +90,7 @@ numeral.locale('nl-nl');
             warnings.push(`Multiple matches found for ${tenantName}`);
           } else {
             const [tenantLine] = tenantLines;
-            const paymentLine = tenantLine[2];
+            const paymentLine = tenantLine.find((item) => item.includes(PaymentLinePattern));
             const payments = paymentLine.split('+');
             payments[2] = padNumber(total, '+');
             payments[3] = padNumber(balance);
