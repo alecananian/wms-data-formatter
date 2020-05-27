@@ -110,7 +110,7 @@ numeral.locale('nl-nl');
 
     outputTextarea.value = outputDataString;
     if (warnings.length > 0) {
-      warningsEl.innerHTML = warnings.join('<br>');
+      warningsEl.innerHTML = `<strong>Warnings found for ${warnings.length} line(s):</strong><br>${warnings.join('<br>')}`;
       warningsEl.classList.remove('d-none');
     } else {
       warningsEl.classList.add('d-none');
