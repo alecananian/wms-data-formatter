@@ -41,6 +41,10 @@ numeral.locale('nl-nl');
       .toLowerCase()
   );
 
+  const replaceAfterIndex = (str, search, replace, index) => (
+    str.slice(0, index) + str.slice(index).replace(search, replace)
+  );
+
   let sourceData;
   let outputData;
   let outputDataString;
@@ -90,6 +94,7 @@ numeral.locale('nl-nl');
             warnings.push(`Multiple matches found for ${tenantName}`);
           } else {
             const [tenantLine] = tenantLines;
+            const tenantId = tenantLine[1];
             const paymentLine = tenantLine.find((item) => item.includes(PaymentLinePattern));
             const payments = paymentLine.split('+');
             payments[2] = padNumber(total, '+');
@@ -100,7 +105,8 @@ numeral.locale('nl-nl');
                 .replace(/\+\+/g, '+')
                 .replace(/-\+/g, '-')
             );
-            outputDataString = outputDataString.replace(paymentLine, newPaymentLine);
+            const tenantIndex = outputDataString.indexOf(tenantId);
+            outputDataString = replaceAfterIndex(outputDataString, paymentLine, newPaymentLine, tenantIndex);
           }
         } else {
           warnings.push(`No data found for ${tenantName}`);
