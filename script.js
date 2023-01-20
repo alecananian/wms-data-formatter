@@ -1,15 +1,15 @@
 numeral.register('locale', 'nl-nl', {
   delimiters: {
     thousands: '.',
-    decimal  : ','
+    decimal: ','
   },
   abbreviations: {
-    thousand : 'k',
-    million  : 'mln',
-    billion  : 'mrd',
-    trillion : 'bln'
+    thousand: 'k',
+    million: 'mln',
+    billion: 'mrd',
+    trillion: 'bln'
   },
-  ordinal : function (number) {
+  ordinal: function (number) {
     var remainder = number % 100;
     return (number !== 0 && remainder <= 1 || remainder === 8 || remainder >= 20) ? 'ste' : 'de';
   },
@@ -65,22 +65,27 @@ numeral.locale('nl-nl');
     ));
 
     sourceData.forEach(({
+      id,
       tenantName,
       total,
       balance,
     }) => {
-      if (tenantName && tenantName.length > 0) {
+      if (id || tenantName) {
         let tenantLines = filteredOutputData.filter((line) => {
-          const normalizedLineName = line[1].toLowerCase();
+          if (id) {
+            return line.length >= 4 && line[3].toLowerCase() === id.toLowerCase();
+          }
+
+          const nameLine = line[1].toLowerCase();
           return (
             // Line has a match on tenant name
-            normalizedLineName.includes(tenantName.toLowerCase())
+            nameLine.includes(tenantName.toLowerCase())
             // Try matching after removing some known additions
-            || normalizedLineName.includes(normalizeTenantName(tenantName))
+            || nameLine.includes(normalizeTenantName(tenantName))
           );
         });
 
-        if (tenantLines.length === 0) {
+        if (tenantLines.length === 0 && tenantName) {
           tenantLines = filteredOutputData.filter((line) => {
             // Use string similarity matcher with threshold
             const normalizedTenantName = normalizeTenantName(tenantName);
@@ -97,7 +102,7 @@ numeral.locale('nl-nl');
             const tenantId = tenantLine[1];
             const paymentLine = tenantLine.find((item) => item.includes(PaymentLinePattern));
             const payments = paymentLine.split('+');
-            payments[2] = padNumber(total, '+');
+            payments[2] = padNumber(id ? total - balance : total, '+');
             payments[3] = padNumber(balance);
             const newPaymentLine = (
               payments
@@ -130,15 +135,26 @@ numeral.locale('nl-nl');
         delimiter: ';',
         header: true,
       });
-      sourceData = data.map(({
-        TenantName = '',
-        Total = '0',
-        Balance = '0',
-      }) => ({
-        tenantName: TenantName.trim(),
-        total: numeral(Total).value(),
-        balance: numeral(Balance).value(),
-      }));
+      sourceData = data.map((item) => {
+        const id = (item['Medl.nr.'] || '').trim();
+
+        // Normalize tenant name
+        const firstName = (item.Fornavn || '').trim();
+        const lastName = (item.Etternavn || '').trim();
+        let tenantName = (item.TenantName || '').trim();
+        if (!tenantName && (firstName || lastName)) {
+          tenantName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName;
+        }
+
+        const total = item.Total || item['Akk. Akonto per des.'] || '0';
+        const balance = item.Balance || item['Str�mkonto (til gode +, skylder -)'] || item['Strømkonto (til gode +, skylder -)'] || '0';
+        return {
+          id,
+          tenantName,
+          total: numeral(total).value(),
+          balance: numeral(balance).value(),
+        }
+      });
 
       if (sourceData && outputData) {
         printOutput(outputTextarea);
