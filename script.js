@@ -73,7 +73,7 @@ numeral.locale('nl-nl');
       if (id || tenantName) {
         let tenantLines = filteredOutputData.filter((line) => {
           if (id) {
-            return line.length >= 4 && line[3].toLowerCase() === id.toLowerCase();
+            return line.some((item) => item.toLowerCase() === id.toLowerCase());
           }
 
           const nameLine = line[1].toLowerCase();
